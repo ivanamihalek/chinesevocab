@@ -62,9 +62,20 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'chinesevocab.pipelines.ChinesevocabPipeline': 300,
-#}
+# The integer values you assign to classes in this setting determine the order
+# in which they run: items go through from lower valued to higher valued classes.
+# It’s customary to define these numbers in the 0-1000 range.
+ITEM_PIPELINES = {
+   'chinesevocab.pipelines.MongoDBPipeline': 300,
+}
+MONGODB_URI = "mongodb://localhost:27017"
+# MONGODB_PORT = 27017  # default port for mongoDB;
+# http interface accessible at  http://localhost:28017
+# http interface  not working some hacking apparently needed in /etc/mongod.conf
+# I'm not a fan of these anyway, so move on
+MONGODB_DB  = "chinesevocab"
+MONGODB_COLLECTION = "words"
+
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
