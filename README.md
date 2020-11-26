@@ -1,8 +1,3 @@
-# scrapy
-scrapy 
+# ChineseVocab - a Scrapy project
 
- NLTK
- pandas
- scikit-learn
- mapreduce
- nosqlcreate project with, for example, scrapy startproject tutorial
+Depnds on: jieba

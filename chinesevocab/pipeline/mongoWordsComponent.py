@@ -12,9 +12,9 @@ from itemadapter import ItemAdapter
 # for MongoDB dos see https://docs.mongodb.com/manual/installation/
 # make sure mongo is running: sudo systemctl start mongod
 # check running: sudo systemctl status mongod
-class MongoDBPipeline:
+class MongoWordsComponent:
     # this assumes I'm feeding only into this collection
-    collection_name = 'words'  
+    collection_name = 'words'
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
@@ -28,17 +28,15 @@ class MongoDBPipeline:
         )
 
     def open_spider(self, spider):
-        logging.debug("open o spider <<<<<<<<<<<<<<<<<")
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
 
     def close_spider(self, spider):
-        logging.debug("close o spider <<<<<<<<<<<<<<<<<")
         self.client.close()
 
     def process_item(self, item, spider):
-        # note the insert
-        # if nonexisting, the DB will be created
-        self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
-        logging.debug("Item added to MongoDB <<<<<<<<<<<<<<<<<")
+        # the item now is a set of tokens (words)
+        print(ItemAdapter(item).asdict())
+        #for token in item['tokens']:
+            #self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
         return item

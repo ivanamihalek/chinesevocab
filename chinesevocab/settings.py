@@ -12,6 +12,8 @@ BOT_NAME = 'chinesevocab'
 SPIDER_MODULES = ['chinesevocab.spiders']
 NEWSPIDER_MODULE = 'chinesevocab.spiders'
 
+LOG_ENABLED = True
+LOG_LEVEL = "ERROR"  # too much noise otherwise
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'chinesevocab (+http://www.yourdomain.com)'
@@ -66,7 +68,9 @@ ROBOTSTXT_OBEY = True
 # in which they run: items go through from lower valued to higher valued classes.
 # It’s customary to define these numbers in the 0-1000 range.
 ITEM_PIPELINES = {
-   'chinesevocab.pipelines.MongoDBPipeline': 300,
+   'chinesevocab.pipeline.mongoTextComponent.MongoTextComponent': 100,
+   'chinesevocab.pipeline.textParserComponent.TextParserComponent': 200,
+   'chinesevocab.pipeline.mongoWordsComponent.MongoWordsComponent': 300,
 }
 MONGODB_URI = "mongodb://localhost:27017"
 # MONGODB_PORT = 27017  # default port for mongoDB;
@@ -74,8 +78,8 @@ MONGODB_URI = "mongodb://localhost:27017"
 # http interface  not working some hacking apparently needed in /etc/mongod.conf
 # I'm not a fan of these anyway, so move on
 MONGODB_DB  = "chinesevocab"
-MONGODB_COLLECTION = "words"
-
+MONGODB_WORDS_COLLECTION = "words"
+MONGODB_TEXT_COLLECTION = "text_chunks"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
