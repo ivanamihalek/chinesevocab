@@ -71,7 +71,7 @@ class PlainSpider(scrapy.Spider):
 			item['url'] = unquoted_url
 			return self._parse_wiki(item, response)
 		elif source == "baike":
-			# self.log(f'As of Nov 2020 baike forbids robots')
+			self.log(f'As of Nov 2020 baike forbids robots')
 			return
 		else:
 			# write to file - usually that would not be what we want

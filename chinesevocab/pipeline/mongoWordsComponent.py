@@ -12,6 +12,10 @@ from itemadapter import ItemAdapter
 # for MongoDB dos see https://docs.mongodb.com/manual/installation/
 # make sure mongo is running: sudo systemctl start mongod
 # check running: sudo systemctl status mongod
+from pymongo import UpdateOne
+from pymongo.errors import BulkWriteError
+
+
 class MongoWordsComponent:
     # this assumes I'm feeding only into this collection
     collection_name = 'words'
@@ -36,7 +40,11 @@ class MongoWordsComponent:
 
     def process_item(self, item, spider):
         # the item now is a set of tokens (words)
-        print(ItemAdapter(item).asdict())
-        #for token in item['tokens']:
-            #self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
+        requests = []
+        for token in item['tokens']:
+            requests.append(UpdateOne({'glyphs': token}, {'$set': {'glyphs': token}}, upsert=True))
+        try:
+            self.db[self.collection_name].bulk_write(requests, ordered=False)
+        except BulkWriteError as bwe:
+            print(bwe.details)  # TODO where's the logger handle
         return item
