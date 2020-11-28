@@ -7,6 +7,8 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+from chinesevocab.pipeline.mongo_words_component import MongoWordsComponent
+
 BOT_NAME = 'chinesevocab'
 
 SPIDER_MODULES = ['chinesevocab.spiders']
@@ -68,9 +70,9 @@ ROBOTSTXT_OBEY = True
 # in which they run: items go through from lower valued to higher valued classes.
 # It’s customary to define these numbers in the 0-1000 range.
 ITEM_PIPELINES = {
-   'chinesevocab.pipeline.mongoTextComponent.MongoTextComponent': 100,
-   'chinesevocab.pipeline.textParserComponent.TextParserComponent': 200,
-   'chinesevocab.pipeline.mongoWordsComponent.MongoWordsComponent': 300,
+   # 'chinesevocab.pipeline.mongo_text_component.MongoTextComponent': 100,
+   # 'chinesevocab.pipeline.text_parser_component.TextParserComponent': 200,
+   # 'chinesevocab.pipeline.mongo_words_component.MongoWordsComponent': 300,
 }
 MONGODB_URI = "mongodb://localhost:27017"
 # MONGODB_PORT = 27017  # default port for mongoDB;

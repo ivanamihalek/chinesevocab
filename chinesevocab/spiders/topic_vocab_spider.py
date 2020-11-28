@@ -1,6 +1,6 @@
 
 # You can provide command line arguments to your spiders by using the -a option when running them:
-# scrapy crawl plain -O plain.json -a topic=genome
+# scrapy crawl topic -a topic=genome
 # These arguments are passed to the Spider’s __init__ method and become spider attributes by default.
 # Suggested use scrapy crawl plain -O plain.json -a topic=genome 2>&1 | grep DEBUG > debug.log
 
@@ -9,24 +9,27 @@ from chinesevocab.items import ChineseTextItem
 from urllib.parse import unquote
 from re import sub
 
-# ensure having a custom logger for any module
-# by using the __name__ variable, which is populated with current module’s path:
-# I don't know how to get around the global log level (in setting.py)
-# import logging
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+from chinesevocab.pipeline.mongo_text_component import MongoTextComponent
+from chinesevocab.pipeline.text_parser_component import TextParserComponent
+from chinesevocab.pipeline.mongo_words_component import MongoWordsComponent
 
 
-class PlainSpider(scrapy.Spider):
+class TopicVocabSpider(scrapy.Spider):
 	# name must be unique within a project
 	# => note this is how we invoke it from the scrapy crawl command
-	name = "plain"
+	name = "topic"
+	# note  custom_settings has to be defined as a class (not an instance) attribute
+	custom_settings = {'ITEM_PIPELINES': {
+		MongoTextComponent:  100,
+		TextParserComponent: 200,
+		MongoWordsComponent: 300,
+	}}
 
 	source_url = {
 		"wiki": {"molecular_biology": "https://zh.wikipedia.org/zh-cn/分子生物学",
-				"genome": "https://zh.wikipedia.org/zh-cn/基因組"},
+		         "genome": "https://zh.wikipedia.org/zh-cn/基因組"},
 		"baike": {"molecular_biology": "https://baike.baidu.com/item/分子生物学/126586",
-				 "genome": "https://baike.baidu.com/item/基因组"}
+		          "genome": "https://baike.baidu.com/item/基因组"}
 	}
 
 	def _process_text_chunk(self, item, jumbo_string):
@@ -62,13 +65,15 @@ class PlainSpider(scrapy.Spider):
 
 	def parse(self, response, **kwargs):  # called to handle the response downloaded
 		unquoted_url = unquote(response.url)  # back from percentage encoding to utf
-		topic = getattr(self, 'topic', "no_topic")
+		topic = getattr(self, 'topic', "anon")
 		source = "anon"
 		for src, pages in self.source_url.items():
 			if unquoted_url in pages[topic]: source = src
 		if source == "wiki":
 			item = ChineseTextItem()
+			item['collection'] = f"words_{topic}"
 			item['url'] = unquoted_url
+			print("in topic_vocab_spider process")
 			return self._parse_wiki(item, response)
 		elif source == "baike":
 			self.log(f'As of Nov 2020 baike forbids robots')

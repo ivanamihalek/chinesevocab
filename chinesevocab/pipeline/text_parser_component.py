@@ -40,4 +40,5 @@ class TextParserComponent:
         # print("processing item<<<<<<<<<<<<<<<<<")
         processedItem = TokenSetItem()
         processedItem['tokens'] = self._tokenize(item)
+        processedItem['collection'] = item['collection']
         return processedItem

@@ -17,8 +17,6 @@ from pymongo.errors import BulkWriteError
 
 
 class MongoWordsComponent:
-    # this assumes I'm feeding only into this collection
-    collection_name = 'words'
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
@@ -28,7 +26,7 @@ class MongoWordsComponent:
     def from_crawler(cls, crawler):
         return cls(
             mongo_uri=crawler.settings.get('MONGO_URI'),
-            mongo_db=crawler.settings.get('MONGODB_DB', 'items')
+            mongo_db=crawler.settings.get('MONGODB_DB', 'items'),
         )
 
     def open_spider(self, spider):
@@ -40,11 +38,14 @@ class MongoWordsComponent:
 
     def process_item(self, item, spider):
         # the item now is a set of tokens (words)
+        collection = item['collection']
         requests = []
         for token in item['tokens']:
             requests.append(UpdateOne({'glyphs': token}, {'$set': {'glyphs': token}}, upsert=True))
         try:
-            self.db[self.collection_name].bulk_write(requests, ordered=False)
+            # this is mongo's batch
+            # https://pymongo.readthedocs.io/en/stable/examples/bulk.html
+            self.db[collection].bulk_write(requests, ordered=False)
         except BulkWriteError as bwe:
             print(bwe.details)  # TODO where's the logger handle
         return item
