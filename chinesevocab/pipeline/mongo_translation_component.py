@@ -12,7 +12,11 @@ from itemadapter import ItemAdapter
 # for MongoDB dos see https://docs.mongodb.com/manual/installation/
 # make sure mongo is running: sudo systemctl start mongod
 # check running: sudo systemctl status mongod
-class MongoTextComponent:
+from pymongo import UpdateOne
+from pymongo.errors import BulkWriteError
+
+
+class MongoTranslationComponent:
 
     def __init__(self, mongo_uri, mongo_db, mongo_collection):
         self.mongo_uri = mongo_uri
@@ -22,13 +26,12 @@ class MongoTextComponent:
     @classmethod
     def from_crawler(cls, crawler):
         return cls(
-            mongo_uri=crawler.settings.get('MONGODB_URI'),
+            mongo_uri=crawler.settings.get('MONGO_URI'),
             mongo_db=crawler.settings.get('MONGODB_DB', 'items'),
-            mongo_collection=crawler.settings.get('TEXT_COLLECTION', 'text_chunks'),
+            mongo_collection=crawler.settings.get('TRANSLATION_COLLECTION', 'translation')
         )
 
     def open_spider(self, spider):
-        print(f"in MongoTextComponent open_spider")
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
 
@@ -36,18 +39,7 @@ class MongoTextComponent:
         self.client.close()
 
     def process_item(self, item, spider):
-        print(f"in MongoTextComponent process_item")
-        # note the insert/update/upsert
-        # if nonexistent, the DB will be created
-        # without checking: insert_one(ItemAdapter(item).asdict())
-        # find or update:
-        # def find_one_and_update(self, filter, update,
-        #                     projection=None, sort=None, upsert=False, etc ...)
-        # filter: A query that matches the document to update.
-        # update: The update operations to apply (increase, set, rename, etc.)
-        # For the operators see  https://docs.mongodb.com/manual/reference/operator/update-field/)
-        # upsert: When ``True``, inserts a new document if no document matches the query.
-        filter = {'url': item['url']}
-        update = {'$set': {'text': item['text']}}
+        filter = {'chinese': item['chinese']}
+        update = {'$set': dict(item)}
         self.db[self.collection].find_one_and_update(filter, update, upsert=True)
         return item

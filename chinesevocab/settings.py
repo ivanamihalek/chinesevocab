@@ -81,8 +81,8 @@ MONGODB_URI = "mongodb://localhost:27017"
 # I'm not a fan of these anyway, so move on
 MONGODB_DB  = "chinesevocab"
 MONGODB_WORDS_COLLECTION = "words"
-MONGODB_TEXT_COLLECTION = "text_chunks"
-
+TEXT_COLLECTION = "text_chunks"
+TRANSLATION_COLLECTION = "translation"
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 #AUTOTHROTTLE_ENABLED = True

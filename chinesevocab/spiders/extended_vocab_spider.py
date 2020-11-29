@@ -3,8 +3,11 @@
 # scrapy crawl extended -a topic=genome
 # These arguments are passed to the Spider’s __init__ method and become spider attributes by default.
 # Suggested use scrapy crawl plain -O plain.json -a topic=genome 2>&1 | grep DEBUG > debug.log
+from pprint import pprint
 
+import pymongo
 import scrapy
+from scrapy.exceptions import CloseSpider
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 
@@ -17,8 +20,8 @@ from chinesevocab.pipeline.mongo_words_component import MongoWordsComponent
 
 
 class ExtendedVocabSpider(scrapy.Spider):
-	# name must be unique within a project
-	# => note this is how we invoke it from the scrapy crawl command
+	# for the purposes of this demo, the extended search consists
+	# of the first three pages returned by google
 	name = "extended"
 	# note  custom_settings has to be defined as a class (not an instance) attribute
 	# custom_settings = {'ITEM_PIPELINES': {
@@ -27,15 +30,39 @@ class ExtendedVocabSpider(scrapy.Spider):
 	# 	MongoWordsComponent: 300},
 	# 	'ROBOTSTXT_OBEY': False  # let's just ask for a page or two
 	# }
-	custom_settings = {'ROBOTSTXT_OBEY': False  # let's just ask for a page or two
-	}
-	link_extractor = LinkExtractor()
-	start_urls = ['http://google.com/search?q=基因组']
+	custom_settings = {'ROBOTSTXT_OBEY': False}  # let's just ask for a page or two
 	domains_not_allowed = ['upload.wikimedia.org', 'hr.wikipedia.org', 'accounts.google.com']
 
-	def __init__(self, **kwargs):
-		super().__init__(**kwargs)
-		print("hullo")
+	link_extractor = LinkExtractor()
+
+	def _get_topic(self):
+		topic = getattr(self, 'topic', None)
+		if not topic:
+			topic = "genome"
+			setattr(self,  'topic', topic)
+		return topic
+
+	def _topic_translation(self):
+		topic = getattr(self, 'topic', None)
+		# we should have the translation at this point
+		client     = pymongo.MongoClient(self.settings['MONGODB_URI'])
+		db         = client[self.settings['MONGODB_DB']]
+		collection = self.settings['TRANSLATION_COLLECTION']
+		# the second argument is projection, it specifies which arguments to return (1=return, 0=do not)
+		ret = db[collection].find_one({'english': {'$eq': topic}}, {'chinese': 1})
+		if not ret or 'chinese' not in ret or not ret['chinese']:
+			raise CloseSpider(f"Chinese translation for the topic '{topic}' not found in the local DB")
+		client.close()
+		return ret['chinese']
+
+	def start_requests(self):  # must return an iterable of Requests
+		topic_chinese = self._topic_translation()
+		raw_pages_domain = "https://google.com"
+		path = f"search?q={topic_chinese}"
+		urls = [f"{raw_pages_domain}/{path}&start{i*10}" for i in range(3)]
+
+		for url in urls:
+			yield scrapy.Request(url=url, callback=self.parse)
 
 	def _strip_link(self, compound_link):
 		compound_pieces = compound_link.split("=")
@@ -48,6 +75,8 @@ class ExtendedVocabSpider(scrapy.Spider):
 		return url
 
 	def parse(self, response, **kwargs):
+		topic = self._get_topic()
+		collection = f"words_{topic}"  # the collection we will be storing this into
 		# this is working in python3 shell and for response.url
 		# unquoted_url = unquote(response.url)  # back from percentage encoding to utf
 		for link in self.link_extractor.extract_links(response):
@@ -57,4 +86,3 @@ class ExtendedVocabSpider(scrapy.Spider):
 			url = self._strip_link(link.url)
 			if not url: continue
 			print(url)
-

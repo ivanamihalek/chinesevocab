@@ -25,3 +25,10 @@ class TokenSetItem(Item):
     # the collection we ant to store it in (basic or  one of topics)
     collection = Field()
     tokens = Field()
+
+
+class TranslationItem(Item):
+    chinese = Field()
+    pinyin = Field()
+    english = Field()
+
