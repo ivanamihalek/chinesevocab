@@ -26,7 +26,7 @@ class TranslationSpider(scrapy.Spider):
 			topic = "genome"
 			setattr(self,  'topic', topic)
 		# for translation ping linguabot
-		self.start_urls = [f"http://www.linguabot.com/dictLookup.php?word={topic}"]
+		self.start_urls = [f"http://www.linguabot.com/dictLookup.php?word={topic.replace('_', '+')}"]
 
 	def start_requests(self):  # must return an iterable of Requests
 		for url in self.start_urls:
@@ -37,7 +37,7 @@ class TranslationSpider(scrapy.Spider):
 			yield scrapy.Request(url=url, callback=self.parse, meta={'query': topic})
 
 	def parse(self, response, **kwargs):
-		query = response.meta.get('query')
+		query = response.meta.get('query').replace("+", " ").lower()
 		# TODO this is somewhat simpleminded in assuming that
 		# TODO  we are going to have one and exactly one translation
 		# tr 4 td's the fist is hanzi, the third english
@@ -47,12 +47,13 @@ class TranslationSpider(scrapy.Spider):
 			cols = row.css("td *::text").getall()
 			if not cols or len(cols)!=4: continue
 			[chinese, pinyin, english, english_pronunciation] = cols
+			english = english.lower()
 			if english == query:
 				item = TranslationItem()
 				item['chinese'] = chinese
 				item['english'] = english
 				item['pinyin'] = pinyin.replace("[", "").replace("]", "").strip()
 				break
-		if not item: # the rest of the pipeline depends on it, so we cannot move on without it
+		if not item:  # the rest of the pipeline depends on it, so we cannot move on without it
 			raise CloseSpider(f"Chinese translation for the topic '{query}' not found")
 		return item

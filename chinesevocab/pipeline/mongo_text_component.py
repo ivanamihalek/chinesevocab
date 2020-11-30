@@ -28,7 +28,6 @@ class MongoTextComponent:
         )
 
     def open_spider(self, spider):
-        print(f"in MongoTextComponent open_spider")
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
 
@@ -36,7 +35,6 @@ class MongoTextComponent:
         self.client.close()
 
     def process_item(self, item, spider):
-        print(f"in MongoTextComponent process_item")
         # note the insert/update/upsert
         # if nonexistent, the DB will be created
         # without checking: insert_one(ItemAdapter(item).asdict())

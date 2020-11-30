@@ -19,7 +19,7 @@ class TextParserComponent:
 
     def _tokenize(self, item):
         # get rid of non-chinese characters
-        matches = re.findall("[\u4e00-\u9FFF]", item['text'])
+        matches = re.findall(r"[\u4e00-\u9FFF]", item['text'])
         chstr = "".join(matches)
         jieba.setLogLevel(logging.ERROR)
         return set(jieba.cut(chstr, cut_all=True))

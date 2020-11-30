@@ -24,7 +24,7 @@ class TopicVocabSpider(scrapy.Spider):
 		TextParserComponent: 200,
 		MongoWordsComponent: 300,
 	}}
-
+	# TODO evaluate source for the query
 	source_url = {
 		"wiki": {"molecular_biology": "https://zh.wikipedia.org/zh-cn/分子生物学",
 		         "genome": "https://zh.wikipedia.org/zh-cn/基因組"},

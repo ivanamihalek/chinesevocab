@@ -1,5 +1,5 @@
 
-# to use directly - though here runnig from fun.py would be preferred
+# to use directly - though here running from fun.py would be preferred
 # scrapy crawl basic
 # These arguments are passed to the Spider’s __init__ method and become spider attributes by default.
 
@@ -17,12 +17,14 @@ class BasicVocabSpider(scrapy.Spider):
 	custom_settings = {'ITEM_PIPELINES': {MongoWordsComponent: 300}}
 
 	# looks like I cannot scrape github proper - they prefer using their API (see https://github.com/robots.txt)
-	# today I'll just start with the list of pages that I know contain the basic mandarin vocab (HSK 1-3)
+	# today I'll just start with the list of pages that I know contain the basic mandarin vocab (HSK 1-5)
+	# these pages are plain text, so no html/css parsing involved
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
 		raw_pages_domain = "https://raw.githubusercontent.com"
 		path = "glxxyz/hskhsk.com/main/data/lists"
-		self.start_urls = [f"{raw_pages_domain}/{path}/HSK%20Official%202012%20L{i+1}.txt" for i in range(3)]
+		hsk_bound_level = 5  #  max-level will be 4
+		self.start_urls = [f"{raw_pages_domain}/{path}/HSK%20Official%202012%20L{i+1}.txt" for i in range(hsk_bound_level)]
 		self.collection = "words_basic"  # the collection we will be storing this into
 
 	def parse(self, response, **kwargs):  # called to handle the response downloaded

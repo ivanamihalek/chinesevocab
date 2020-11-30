@@ -32,6 +32,9 @@ class MongoWordsComponent:
     def open_spider(self, spider):
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
+        # it might be faster to just read in the glyphs from the basic vocab here - there  shouldn't be that many
+        # TODO read the collection name from the settings
+        self.basic_words = set([doc["glyphs"] for doc in self.db["words_basic"].find()])
 
     def close_spider(self, spider):
         self.client.close()
@@ -40,12 +43,13 @@ class MongoWordsComponent:
         # the item now is a set of tokens (words)
         collection = item['collection']
         requests = []
-        for token in item['tokens']:
-            requests.append(UpdateOne({'glyphs': token}, {'$set': {'glyphs': token}}, upsert=True))
-        try:
-            # this is mongo's batch
-            # https://pymongo.readthedocs.io/en/stable/examples/bulk.html
-            self.db[collection].bulk_write(requests, ordered=False)
-        except BulkWriteError as bwe:
-            print(bwe.details)  # TODO where's the logger handle
+        for token in set(item['tokens']).difference(self.basic_words):
+             requests.append(UpdateOne({'glyphs': token}, {'$set': {'glyphs': token}}, upsert=True))
+        if requests:
+            try:
+                # this is mongo's batch
+                # https://pymongo.readthedocs.io/en/stable/examples/bulk.html
+                self.db[collection].bulk_write(requests, ordered=False)
+            except BulkWriteError as bwe:
+                print(bwe.details)  # TODO where's the logger handle
         return item
