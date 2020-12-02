@@ -18,9 +18,10 @@ from urllib.parse import unquote, urlparse
 from chinesevocab.pipeline.mongo_text_component import MongoTextComponent
 from chinesevocab.pipeline.text_parser_component import TextParserComponent
 from chinesevocab.pipeline.mongo_words_component import MongoWordsComponent
+from chinesevocab.pipeline.component_utils import *
 
 
-class ExtendedVocabSpider(scrapy.Spider):
+class ExtendedTopicVocabSpider(scrapy.Spider):
 	# for the purposes of this demo, the extended search consists
 	# of the first three pages returned by google
 	name = "extended"
@@ -37,26 +38,6 @@ class ExtendedVocabSpider(scrapy.Spider):
 	                       'accounts.google.com', 'baike.baidu.com']
 
 	link_extractor = LinkExtractor()
-
-	def _get_topic(self):
-		topic = getattr(self, 'topic', None)
-		if not topic:
-			topic = "genome"
-			setattr(self,  'topic', topic)
-		return topic
-
-	def _topic_translation(self):
-		topic = getattr(self, 'topic', None)
-		# we should have the translation at this point
-		client     = pymongo.MongoClient(self.settings['MONGODB_URI'])
-		db         = client[self.settings['MONGODB_DB']]
-		collection = self.settings['TRANSLATION_COLLECTION']
-		# the second argument is projection, it specifies which arguments to return (1=return, 0=do not)
-		ret = db[collection].find_one({'english': {'$eq': topic.replace("_", " ")}}, {'chinese': 1})
-		if not ret or 'chinese' not in ret or not ret['chinese']:
-			raise CloseSpider(f"Chinese translation for the topic '{topic}' not found in the local DB")
-		client.close()
-		return ret['chinese']
 
 	def _strip_link(self, compound_link):
 		compound_pieces = compound_link.split("=")
@@ -83,22 +64,16 @@ class ExtendedVocabSpider(scrapy.Spider):
 			return unquoted_url
 
 	def _extract_links(self, response):
-		# TODO: check with the database if we already have the contents of this link
-		# TODO: check with the database if we have enough words
-		unquoted_url = unquote(unquote(response.url))
-		print(f"\nxxxxxxxxxxxxxxxxxxxxxxxxx\n{unquoted_url}")
 		for link in self.link_extractor.extract_links(response):
-			# google is going back to its whatever wih the link
-			# I just need the link
-			# nice of them to keep the link unmangled
+			# google is going back to its whatever wih the mangled link
+			# I just need the resource url (nice of them to keep it  unmangled)
 			url = self._strip_link(link.url)
 			if not url: continue
 			clean_url = self._scrub(url)
-			print("moving to ", clean_url)
 			yield scrapy.Request(url=url, callback=self.parse)
 
 	def _package(self, unquoted_url, jumbo_string):
-		topic = self._get_topic()
+		topic = getattr(self, 'topic', None)
 		item = ChineseTextItem()
 		item['collection'] = f"words_{topic}"
 		item['url'] = unquoted_url
@@ -107,11 +82,10 @@ class ExtendedVocabSpider(scrapy.Spider):
 
 	def _extract_content(self, response):
 		unquoted_url = unquote(unquote(response.url))
-		print(f"\n000000000000000000000000000000\n{unquoted_url}")
 		response_chunks = response.css('*::text').getall()
 		if not response_chunks: return
 		# how much of that is actually chinese?
-		cc_pattern = r"[\u4e00-\u9FFF]" # chinese characters
+		cc_pattern = r"[\u4e00-\u9FFF]"  # chinese characters
 		space_pattern = r"[\n\t]+|\[\d+\]"
 		usable_chunks = []
 		for chunk in response_chunks:
@@ -124,18 +98,18 @@ class ExtendedVocabSpider(scrapy.Spider):
 		return self._package(unquoted_url, "".join(usable_chunks))
 
 	def start_requests(self):  # must return an iterable of Requests
-		topic_chinese = self._topic_translation()
+		topic = set_topic(self)
+		print(f"TopicVocabSpider in start_requests, topic is: {topic}")
+		topic_chinese = topic_translation(self)
 		path = f"search?q={topic_chinese}"
 		urls = [f"https://{self.start_netloc}/{path}&start={i*10}" for i in range(self.number_of_start_pages)]
 		for url in urls:
 			yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):
-		topic = self._get_topic()
-		collection = f"words_{topic}"  # the collection we will be storing this into
-		# this is working in python3 shell and for response.url
-		unquoted_url = unquote(response.url)  # back from percentage encoding to utf
 		if urlparse(response.url).netloc == self.start_netloc:
+			# use google pages to extract links to follow
 			return self._extract_links(response)
 		else:
+			# we should be on a page with something useful
 			return self._extract_content(response)

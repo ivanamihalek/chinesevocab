@@ -48,9 +48,10 @@ ROBOTSTXT_OBEY = True
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    'chinesevocab.middlewares.ChinesevocabSpiderMiddleware': 543,
-#}
+# we use middleware to print the message from process_spider_exception
+SPIDER_MIDDLEWARES = {
+   'chinesevocab.middlewares.ChinesevocabSpiderMiddleware': 543,
+}
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
@@ -80,9 +81,10 @@ MONGODB_URI = "mongodb://localhost:27017"
 # http interface  not working some hacking apparently needed in /etc/mongod.conf
 # I'm not a fan of these anyway, so move on
 MONGODB_DB  = "chinesevocab"
-MONGODB_WORDS_COLLECTION = "words"
+WORDS_COLLECTION = "words"
 TEXT_COLLECTION = "text_chunks"
 TRANSLATION_COLLECTION = "translation"
+
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 #AUTOTHROTTLE_ENABLED = True

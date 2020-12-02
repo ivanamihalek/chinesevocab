@@ -35,6 +35,7 @@ class MongoTextComponent:
         self.client.close()
 
     def process_item(self, item, spider):
+        print("In process_item in MongoTextComponent.")
         # note the insert/update/upsert
         # if nonexistent, the DB will be created
         # without checking: insert_one(ItemAdapter(item).asdict())

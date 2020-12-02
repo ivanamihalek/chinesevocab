@@ -8,7 +8,6 @@ import logging
 import pymongo
 from itemadapter import ItemAdapter
 
-
 # for MongoDB dos see https://docs.mongodb.com/manual/installation/
 # make sure mongo is running: sudo systemctl start mongod
 # check running: sudo systemctl status mongod
@@ -34,17 +33,21 @@ class MongoWordsComponent:
         self.db = self.client[self.mongo_db]
         # it might be faster to just read in the glyphs from the basic vocab here - there  shouldn't be that many
         # TODO read the collection name from the settings
-        self.basic_words = set([doc["glyphs"] for doc in self.db["words_basic"].find()])
+        # we are using words themselves as keys
+        self.basic_words = set([doc["_id"] for doc in self.db["words_basic"].find()])
 
     def close_spider(self, spider):
         self.client.close()
 
     def process_item(self, item, spider):
+        # print(f"In process_item in MongoWordsComponent.")
         # the item now is a set of tokens (words)
         collection = item['collection']
         requests = []
-        for token in set(item['tokens']).difference(self.basic_words):
-             requests.append(UpdateOne({'glyphs': token}, {'$set': {'glyphs': token}}, upsert=True))
+        for token in item['tokens']:
+            if token in self.basic_words: continue
+            # we ant duplicates, because we will count the word frequency
+            requests.append(UpdateOne({'_id': token}, {"$inc": {"count": 1}}, upsert=True))
         if requests:
             try:
                 # this is mongo's batch
