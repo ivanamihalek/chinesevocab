@@ -5,7 +5,6 @@
 # Suggested use scrapy crawl plain -O plain.json -a topic=genome 2>&1 | grep DEBUG > debug.log
 
 import scrapy
-from scrapy.exceptions import CloseSpider
 
 from chinesevocab.items import ChineseTextItem
 from urllib.parse import unquote
@@ -44,9 +43,23 @@ class TopicVocabSpider(scrapy.Spider):
 		item['text'] = jumbo_string
 		return item
 
+	def _topic_translation(self):
+		topic = getattr(self, 'topic', None)
+		# we should have the translation at this point
+		client     = pymongo.MongoClient(self.settings['MONGODB_URI'])
+		db         = client[self.settings['MONGODB_DB']]
+		collection = self.settings['TRANSLATION_COLLECTION']
+		# the second argument is projection, it specifies which arguments to return (1=return, 0=do not)
+		ret = db[collection].find_one({'english': {'$eq': topic.replace("_", " ")}}, {'chinese': 1})
+		client.close()
+		if not ret or 'chinese' not in ret or not ret['chinese']:
+			print("xxxxxxxxxxxxxxxxxxxxxxxxxxx")
+			raise CloseSpider(f"Chinese translation for the topic '{topic}' not found in the local DB.")
+		return ret['chinese']
+
 	def start_requests(self):  # must return an iterable of Requests
 		topic = set_topic(self)
-		topic_chinese = topic_translation(self)
+		topic_chinese = self._topic_translation()
 		print(f"TopicVocabSpider in start_requests, topic is: {topic}")
 		url = f"https://{self.start_netloc}/zh-cn/{topic_chinese}"
 		# scrapy.log has been deprecated alongside its functions in favor of explicit calls to the
@@ -56,15 +69,25 @@ class TopicVocabSpider(scrapy.Spider):
 		yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):  # called to handle the response downloaded
+		""" This function parses Chinese language Wikipedia page related to the topic.
+		@url https://zh.wikipedia.org/zh-cn/基因组
+		@returns items 1
+		@scrapes collection url text
+		"""
 		print(f"TopicVocabSpider in parse")
-		topic = getattr(self, 'topic', "anon")
+		topic = "blah"
+		# topic = getattr(self, 'topic', "anon")
 		# did we get Page not found (页面不存在) by any chance?
 		# response.css('a.new::attr(title)').getall() # css does not support pattern matching
-		not_found = response.xpath('//a[@class="new"][contains(@title, "页面不存在")]').get()
+		# not a good idea - apparently there are always links which say "page not found":
+		# not_found = response.xpath('//a[@class="new"][contains(@title, "页面不存在")]').get()
+		# however  维基百科目前还没有与上述标题相同的条目 (Wikipedia currently does not have the entry)
+		# text does not appear when the page with that title exists
+		not_found = response.xpath('//*[contains(text(), "维基百科目前还没有与上述标题相同的条目")]').get()
 		if not_found:
 			raise CloseSpider(f"Wiki page for the topic '{topic}' not found.")
 		# we're ok, format the return item
 		return self._parse_wiki(topic, response)
 
 # 网络搜寻
-# <a href="/w/index.php?title=%E7%BD%91%E7%BB%9C%E6%90%9C%E5%AF%BB&amp;action=edit&amp;redlink=1" class="new" title="网络搜寻（页面不存在）">网络搜寻</a>
+

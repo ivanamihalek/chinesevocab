@@ -94,6 +94,8 @@ class ChinesevocabDownloaderMiddleware:
     def process_exception(self, request, exception, spider):
         # Called when a download handler or a process_request()
         # (from other downloader middleware) raises an exception.
+        if isinstance(exception, CloseSpider):
+            print("OOOOOOOOOOO", exception.reason)
 
         # Must either:
         # - return None: continue processing this exception

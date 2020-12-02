@@ -5,9 +5,8 @@
 # Suggested use scrapy crawl plain -O plain.json -a topic=genome 2>&1 | grep DEBUG > debug.log
 
 import scrapy
-from scrapy.exceptions import CloseSpider
 
-from chinesevocab.items import ChineseTextItem, TranslationItem
+from chinesevocab.items import TranslationItem
 
 from chinesevocab.pipeline.mongo_translation_component import MongoTranslationComponent
 from chinesevocab.pipeline.component_utils import *
@@ -27,11 +26,17 @@ class TranslationSpider(scrapy.Spider):
 		url = f"http://{self.start_netloc}/dictLookup.php?word={topic.replace('_', '+')}"
 		# scrapy.log has been deprecated alongside its functions in favor of explicit calls to the
 		# Python standard logging.
-		yield scrapy.Request(url=url, callback=self.parse, meta={'query': topic})
+		yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):
-		# we put met in there, so it has "_", not "+
-		query = response.meta.get('query').replace("_", " ").lower()
+		""" This function parses a translation page.
+		@url http://www.linguabot.com/dictLookup.php?word=genome
+		@returns items 1
+		@scrapes chinese english pinyin
+		"""
+		print(f"TranslationSpider in parse")
+		topic = getattr(self, 'topic', "genome")
+		query = topic.replace("_", " ").lower()
 		# TODO this is somewhat simpleminded in assuming that
 		# TODO  we are going to have one and exactly one translation
 		# tr 4 td's the fist is hanzi, the third english

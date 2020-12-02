@@ -5,6 +5,9 @@ import pymongo
 # that  topic can come either from the command line and
 # magically be assigned to the class, or it can be defined
 # in the settings
+from scrapy.exceptions import CloseSpider
+
+
 def set_topic(cls):
 	topic = cls.settings.get("TOPIC", None)
 	if topic:
@@ -25,7 +28,9 @@ def topic_translation(cls):
 	collection = cls.settings['TRANSLATION_COLLECTION']
 	# the second argument is projection, it specifies which arguments to return (1=return, 0=do not)
 	ret = db[collection].find_one({'english': {'$eq': topic.replace("_", " ")}}, {'chinese': 1})
+	client.close()
 	if not ret or 'chinese' not in ret or not ret['chinese']:
 		raise CloseSpider(f"Chinese translation for the topic '{topic}' not found in the local DB")
-	client.close()
 	return ret['chinese']
+
+

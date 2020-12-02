@@ -31,10 +31,10 @@ class MongoWordsComponent:
     def open_spider(self, spider):
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
-        # it might be faster to just read in the glyphs from the basic vocab here - there  shouldn't be that many
+        # it might be faster to just read in the glyphs from the generic vocab here - there  shouldn't be that many
         # TODO read the collection name from the settings
         # we are using words themselves as keys
-        self.basic_words = set([doc["_id"] for doc in self.db["words_basic"].find()])
+        self.generic_words = set([doc["_id"] for doc in self.db["words_generic"].find()])
 
     def close_spider(self, spider):
         self.client.close()
@@ -45,7 +45,7 @@ class MongoWordsComponent:
         collection = item['collection']
         requests = []
         for token in item['tokens']:
-            if token in self.basic_words: continue
+            if token in self.generic_words: continue
             # we ant duplicates, because we will count the word frequency
             requests.append(UpdateOne({'_id': token}, {"$inc": {"count": 1}}, upsert=True))
         if requests:

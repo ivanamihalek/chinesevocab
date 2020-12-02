@@ -24,28 +24,39 @@ class GenericVocabSpider(scrapy.Spider):
 	custom_settings = {'ITEM_PIPELINES': {MongoWordsComponent: 300}}
 
 	# looks like I cannot scrape github proper - they prefer using their API (see https://github.com/robots.txt)
-	# today I'll just start with the list of pages that I know contain the basic mandarin vocab (HSK 1-hsk_max_level)
+	# today I'll just start with the list of pages that I know contain the generic mandarin vocab (HSK 1-hsk_max_level)
 	# these pages are plain text, so no html/css parsing involved
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
-		self.start_urls = []
+		self.collection = "words_generic"  # the collection to store in
+
+	def start_requests(self):  # must return an iterable of Requests
+		urls = []
 		# wikipedia most frequent words
 		raw_pages_domain = "https://en.wiktionary.org"
 		path = "wiki/Appendix:Mandarin_Frequency_lists"
 		freq_max = 2  # this is 2 thousand
 		wiki_pages = [f"{raw_pages_domain}/{path}/{i*1000+1}-{(i+1)*1000}" for i in range(freq_max)]
-		self.start_urls.extend(wiki_pages)
+		urls.extend(wiki_pages)
 		# HSK words
 		raw_pages_domain = "https://raw.githubusercontent.com"
 		path = "glxxyz/hskhsk.com/main/data/lists"
 		hsk_max_level = 5
 		hsk_pages = [f"{raw_pages_domain}/{path}/HSK%20Official%202012%20L{i+1}.txt" for i in range(hsk_max_level)]
-		self.start_urls.extend(hsk_pages)
-
-		self.collection = "words_basic"  # the collection to store in
+		urls.extend(hsk_pages)
+		for url in urls:
+			yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):  # called to handle the response downloaded
-		print(f"in basic_vocab_spider parse, {response.url}")
+		""" This function parses pages containing lists of words.
+		@url https://en.wiktionary.org/wiki/Appendix:Mandarin_Frequency_lists/1-1000
+		@returns items 1
+		@scrapes collection tokens
+		@url https://raw.githubusercontent.com/glxxyz/hskhsk.com/main/data/lists/HSK%20Official%202012%20L3.txt
+		@returns items 1
+		@scrapes collection tokens
+		"""
+		print(f"in generic_vocab_spider parse, {response.url}")
 		item = TokenSetItem()
 		# the components that should act on this item
 		item['collection'] = self.collection

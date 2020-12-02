@@ -17,12 +17,12 @@ class ChineseTextItem(Item):
     url = Field()
     # text chunk
     text = Field()
-    # the collection we ant to store it in (basic or  one of topics)
+    # the collection we ant to store it in (generic or  one of topics)
     collection = Field()
 
 
 class TokenSetItem(Item):
-    # the collection we ant to store it in (basic or  one of topics)
+    # the collection we ant to store it in (generic or  one of topics)
     collection = Field()
     tokens = Field()
 
