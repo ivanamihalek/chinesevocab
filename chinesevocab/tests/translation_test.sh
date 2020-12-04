@@ -48,22 +48,22 @@ scrapy crawl translation -a topic=genome > /dev/null 2>&1
 translation_stored=`mongo --eval "db.translation.find({english: 'genome'}, {chinese: 1, _id:0})" cvkb_mockup | grep 基因组`
 if [[ $translation_stored > 0 ]]
 then
-  echo "translation stored: $translation_stored (OK)"
+  tput setaf 4; echo "translation stored: $translation_stored (OK)";  tput sgr0
 else
-  echo "Warning: the expected translation for 'genome' (基因组) not found."
+  tput setaf 1; echo "Warning: the expected translation for 'genome' (基因组) not found.";  tput sgr0
 fi
 
 ## failure test
 ## if we cannot find the word we should raise an exception
 echo; echo "##############################"
 echo translation failure test
-errmsg="Chinese translation for the topic 'web scraping' not found."
-ret=`scrapy crawl translation -a topic="web_scraping" | tail -n1`
-if [[ $errmsg == $ret ]]
+## the full error message will be something like "CloseSpider exception: Chinese translation for the topic 'web scraping' not found."
+ret=`scrapy crawl translation -a topic="web_scraping" | tail -n1 | grep -i "CloseSpider exception: Chinese translation"`
+if [[ $ret > 0 ]]
 then
-  echo "translation not found handled gracefully (OK)"
+  tput setaf 4; echo "translation not found handled gracefully (OK)";  tput sgr0
 else
-  echo "Warning: unexpected behavior on translation  not found."
+  tput setaf 1; echo "Warning: unexpected behavior on translation  not found.";  tput sgr0
 fi
 
 

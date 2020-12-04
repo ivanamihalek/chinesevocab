@@ -49,9 +49,9 @@ words_stored=`mongo --eval "db.words_generic.count()" cvkb_mockup | tail -n1`
 echo "words stored: $words_stored"
 if [[ $words_stored -gt 1000 ]]  # -gt compares integers, > compares strings (duh)
 then
-  echo OK
+  tput setaf 4; echo OK;  tput sgr0  #  the tput thing changes the font color (4=blue, 1=red)
 else
-  echo "Warning: the number of stored generic words smaller than expected."
+  tput setaf 1; echo "Warning: the number of stored generic words smaller than expected.";  tput sgr0
 fi
 
 # cleanup after ourselves

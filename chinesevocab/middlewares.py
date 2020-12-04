@@ -7,7 +7,7 @@ from scrapy import signals
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
-from scrapy.exceptions import CloseSpider
+from scrapy.exceptions import CloseSpider, IgnoreRequest, NotConfigured
 
 
 class ChinesevocabSpiderMiddleware:
@@ -41,7 +41,7 @@ class ChinesevocabSpiderMiddleware:
         # Called when a spider or process_spider_input() method
         # (from other spider middleware) raises an exception.
         if isinstance(exception, CloseSpider):
-            print(exception.reason)
+            print("CloseSpider exception:", exception.reason)
         # Should return either None or an iterable of Request or item objects.
         return
 
@@ -49,7 +49,6 @@ class ChinesevocabSpiderMiddleware:
         # Called with the start requests of the spider, and works
         # similarly to the process_spider_output() method, except
         # that it doesn’t have a response associated.
-
         # Must return only requests (not items).
         for r in start_requests:
             yield r
@@ -94,8 +93,6 @@ class ChinesevocabDownloaderMiddleware:
     def process_exception(self, request, exception, spider):
         # Called when a download handler or a process_request()
         # (from other downloader middleware) raises an exception.
-        if isinstance(exception, CloseSpider):
-            print("OOOOOOOOOOO", exception.reason)
 
         # Must either:
         # - return None: continue processing this exception

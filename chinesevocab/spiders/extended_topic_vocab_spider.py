@@ -9,19 +9,18 @@ import re
 
 import pymongo
 import scrapy
-from scrapy.exceptions import CloseSpider
+from scrapy import Spider
 from scrapy.linkextractors import LinkExtractor
 
-from chinesevocab.items import ChineseTextItem
 from urllib.parse import unquote, urlparse
 
 from chinesevocab.pipeline.mongo_text_component import MongoTextComponent
 from chinesevocab.pipeline.text_parser_component import TextParserComponent
 from chinesevocab.pipeline.mongo_words_component import MongoWordsComponent
-from chinesevocab.pipeline.component_utils import *
+from chinesevocab.spiders.vocab_spider import VocabSpider
 
 
-class ExtendedTopicVocabSpider(scrapy.Spider):
+class ExtendedTopicVocabSpider(VocabSpider):
 	# for the purposes of this demo, the extended search consists
 	# of the first three pages returned by google
 	name = "extended"
@@ -49,7 +48,7 @@ class ExtendedTopicVocabSpider(scrapy.Spider):
 		if parsed_url.path.split(".")[-1].lower() in ["image", "png", "jpg", "gif", "pdf"]: return None
 		return url
 
-	def _scrub(self, url):
+	def _scrub_url(self, url):
 		unquoted_url = unquote(unquote(url))  # not sure what's with this, but it works
 		parsed = urlparse(unquoted_url)
 		if parsed.netloc in ["zh.wikipedia.org", "zh.m.wikibooks.org"]:
@@ -69,47 +68,31 @@ class ExtendedTopicVocabSpider(scrapy.Spider):
 			# I just need the resource url (nice of them to keep it  unmangled)
 			url = self._strip_link(link.url)
 			if not url: continue
-			clean_url = self._scrub(url)
-			yield scrapy.Request(url=url, callback=self.parse)
-
-	def _package(self, unquoted_url, jumbo_string):
-		topic = getattr(self, 'topic', None)
-		item = ChineseTextItem()
-		item['collection'] = f"words_{topic}"
-		item['url'] = unquoted_url
-		item['text'] = jumbo_string
-		return item
-
-	def _extract_content(self, response):
-		unquoted_url = unquote(unquote(response.url))
-		response_chunks = response.css('*::text').getall()
-		if not response_chunks: return
-		# how much of that is actually chinese?
-		cc_pattern = r"[\u4e00-\u9FFF]"  # chinese characters
-		space_pattern = r"[\n\t]+|\[\d+\]"
-		usable_chunks = []
-		for chunk in response_chunks:
-			# get rid of spaces and reference numbers
-			spaced_out_chunk = re.sub(space_pattern, "", chunk)
-			if len(spaced_out_chunk) == 0: continue
-			number_of_chinese_characters = len(re.findall(cc_pattern, spaced_out_chunk))
-			if number_of_chinese_characters/len(spaced_out_chunk) < .8: continue
-			usable_chunks.append(spaced_out_chunk)
-		return self._package(unquoted_url, "".join(usable_chunks))
+			clean_url = self._scrub_url(url)
+			yield scrapy.Request(url=clean_url, callback=self.parse)
 
 	def start_requests(self):  # must return an iterable of Requests
-		topic = set_topic(self)
-		print(f"TopicVocabSpider in start_requests, topic is: {topic}")
-		topic_chinese = topic_translation(self)
-		path = f"search?q={topic_chinese}"
-		urls = [f"https://{self.start_netloc}/{path}&start={i*10}" for i in range(self.number_of_start_pages)]
-		for url in urls:
-			yield scrapy.Request(url=url, callback=self.parse)
+		print(f"TopicVocabSpider in start_requests, topic is: {self.topic}")
+		topic_chinese = self._topic_translation()
+		if not topic_chinese:  # never figured out how to catch  an exception thrown here
+			print(f"No topic translation found for {self.topic}.")
+			return
+		else:
+			path = f"search?q={topic_chinese}"
+			urls = [f"https://{self.start_netloc}/{path}&start={i*10}" for i in range(self.number_of_start_pages)]
+			for url in urls:
+				yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):
+		""" This function follows links from a bigger search engine (Google) and extracts chinese texts from them
+		@url https://zh.wikipedia.org/zh-cn/基因组
+		@returns items 1
+		@scrapes collection url text
+		"""
+		# not sure how to check the extracted links
 		if urlparse(response.url).netloc == self.start_netloc:
 			# use google pages to extract links to follow
 			return self._extract_links(response)
 		else:
 			# we should be on a page with something useful
-			return self._extract_content(response)
+			return self._extract_content(response)  # inherited from vocab_spider
