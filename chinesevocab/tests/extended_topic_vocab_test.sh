@@ -45,7 +45,7 @@ echo 'MONGODB_DB  = "cvkb_mockup"' >> ../settings.py
 mongo --eval "db.dropDatabase()" cvkb_mockup   > /dev/null 2>&1
 
 echo "testing the case of no translation found"
-ret=`scrapy crawl extended -a topic="web_crawling" | tail -n1 | grep -i "No extended translation"`
+ret=`scrapy crawl extended -a topic="web_crawling" | tail -n1 | grep -i "No topic translation"`
 echo $ret
 if [[ $ret > 0 ]]
 then
@@ -54,7 +54,6 @@ else
   tput setaf 1; echo "Warning: unexpected behavior on translation  not found."; tput sgr0
 fi
 
-# any other failure cases I could think of?
 
 # cleanup after ourselves
 echo; echo "##############################"

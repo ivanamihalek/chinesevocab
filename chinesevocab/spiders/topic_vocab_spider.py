@@ -50,7 +50,7 @@ class TopicVocabSpider(VocabSpider):
 		return item
 
 	def start_requests(self):  # must return an iterable of Requests
-		print(f"TopicVocabSpider in start_requests, topic is: {self.topic}")
+		print(f"\nTopicVocabSpider in start_requests, topic is: {self.topic}")
 		topic_chinese = self._topic_translation()
 		if not topic_chinese:  # never figured out how to catch  an exception thrown here
 			print(f"No topic translation found for {self.topic}.")

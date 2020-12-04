@@ -1,5 +1,7 @@
+import re
+from urllib.parse import unquote
 
-from scrapy import Spider
+from scrapy import Spider, signals
 from scrapy.exceptions import CloseSpider
 from pymongo import MongoClient
 
@@ -10,29 +12,36 @@ from chinesevocab.items import ChineseTextItem
 # TranslationSpider, TopicVocabSpider, and ExtendedTopicVocabSpider inherit from here
 # and implement the abstract methods
 class VocabSpider(Spider):
+	# TODO skip website we scraped
 
 	# The settings attribute is set in the base Spider class after the spider is initialized.
 	# If you want to use the settings before the initialization (e.g., in your spider’s __init__() method),
 	# you’ll need to override the from_crawler() method.
 	# https://docs.scrapy.org/en/latest/topics/settings.html#how-to-access-settings
-	def __init__(self, settings, **kwargs):
+	def __init__(self, crawler, **kwargs):
 		super().__init__(**kwargs)
-		mongo_uri = settings['MONGODB_URI']
-		mongo_db  = settings['MONGODB_DB']
+		# if I don't store the crawler reference here, I get errors like
+		#   File "/usr/local/lib/python3.8/dist-packages/scrapy/spidermiddlewares/httperror.py",
+		#   line 49, in process_spider_exception
+		#   spider.crawler.stats.inc_value('httperror/response_ignored_count')
+		#   AttributeError: 'ExtendedTopicVocabSpider' object has no attribute 'crawler'
+		self.crawler = crawler
+		mongo_uri = crawler.settings['MONGODB_URI']
+		mongo_db  = crawler.settings['MONGODB_DB']
 		self.client = MongoClient(mongo_uri)
 		self.db = self.client[mongo_db]
-		self.collection = settings['TRANSLATION_COLLECTION']
+		self.collection = crawler.settings['TRANSLATION_COLLECTION']
 		# if we ran from command line, the topic should be set here
 		# (unless the user omitted to do so), however:
 		if getattr(self, "topic", None) is None:
 			# the topic will be in the settings dict  if we run the whole shebang from CrawlerRunner
-			self.topic = settings.get("TOPIC", None)  # I will have to check if it is set
+			self.topic = crawler.settings.get("TOPIC", None)  # I will have to check if it is set
 
 	@classmethod
-	def from_crawler(cls, crawler, **kwargs):
+	def from_crawler(cls, crawler,  *args, **kwargs):
 		# the command line args are in kwargs
 		# need to pass them otherwise I lose them as I inherit
-		return cls(crawler.settings, **kwargs)
+		return cls(crawler, **kwargs)
 
 	def _package_chinese_item(self, unquoted_url, jumbo_string):
 		topic = getattr(self, 'topic', None)

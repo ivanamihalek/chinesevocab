@@ -48,7 +48,7 @@ class TranslationSpider(VocabSpider):
 		item = None
 		for row in response.css("tr"):
 			cols = row.css("td *::text").getall()
-			if not cols or len(cols)!=4: continue
+			if not cols or len(cols) != 4: continue
 			[chinese, pinyin, english, english_pronunciation] = cols
 			english = english.lower()
 			if english == query:
@@ -59,7 +59,8 @@ class TranslationSpider(VocabSpider):
 				print(f"{english} ---> {chinese}")
 				break
 		if not item:  # the rest of the pipeline depends on it, so we cannot move on without it
+			print("#################################")
 			raise CloseSpider(f"Chinese translation for the topic '{self.topic}' not found.")
 		else:
 			self._store_translation(item)
-		return item  # again I need to return this item for the purposes of (contract) testing
+		# return item  # again I need to return this item for the purposes of (contract) testing

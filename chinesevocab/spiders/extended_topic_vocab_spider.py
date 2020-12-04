@@ -35,6 +35,9 @@ class ExtendedTopicVocabSpider(VocabSpider):
 	}
 	domains_not_allowed = ['upload.wikimedia.org', 'hr.wikipedia.org',
 	                       'accounts.google.com', 'baike.baidu.com']
+	# handle page not found explicitly
+	# (https://docs.scrapy.org/en/latest/topics/spider-middleware.html#module-scrapy.spidermiddlewares.httperror)
+	handle_httpstatus_list = [404]
 
 	link_extractor = LinkExtractor()
 
@@ -57,7 +60,7 @@ class ExtendedTopicVocabSpider(VocabSpider):
 			# this will be for example ['', 'wiki', '基因組學'] or  ['', 'zh-hans', '基因組學']
 			# we want the second element of the path  replaced by zh_cn
 			pathpieces[1] = "zh-cn"
-			new_url = "/".join([parsed.netloc]+pathpieces)
+			new_url = "/".join([parsed.scheme+":/", parsed.netloc]+pathpieces)
 			return new_url
 		else:
 			return unquoted_url
@@ -72,7 +75,7 @@ class ExtendedTopicVocabSpider(VocabSpider):
 			yield scrapy.Request(url=clean_url, callback=self.parse)
 
 	def start_requests(self):  # must return an iterable of Requests
-		print(f"TopicVocabSpider in start_requests, topic is: {self.topic}")
+		print(f"\nExtendedTopicVocabSpider in start_requests, topic is: {self.topic}")
 		topic_chinese = self._topic_translation()
 		if not topic_chinese:  # never figured out how to catch  an exception thrown here
 			print(f"No topic translation found for {self.topic}.")
@@ -81,6 +84,7 @@ class ExtendedTopicVocabSpider(VocabSpider):
 			path = f"search?q={topic_chinese}"
 			urls = [f"https://{self.start_netloc}/{path}&start={i*10}" for i in range(self.number_of_start_pages)]
 			for url in urls:
+				print(f"request url: ***  {url}")
 				yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):
@@ -89,10 +93,14 @@ class ExtendedTopicVocabSpider(VocabSpider):
 		@returns items 1
 		@scrapes collection url text
 		"""
+		if response.status == 404:  # page not found
+			return
 		# not sure how to check the extracted links
 		if urlparse(response.url).netloc == self.start_netloc:
 			# use google pages to extract links to follow
+			print(f"extracting links from  {response.url}")
 			return self._extract_links(response)
 		else:
 			# we should be on a page with something useful
-			return self._extract_content(response)  # inherited from vocab_spider
+			print(f"extracting content from  {response.url}")
+			return self._extract_chinese_content(response)  # inherited from vocab_spider

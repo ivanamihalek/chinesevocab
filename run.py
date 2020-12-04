@@ -29,10 +29,10 @@ def prerequisites(settings):
 	client = pymongo.MongoClient(settings["MONGODB_URI"])
 	db = client[settings["MONGODB_DB"]]
 
-	# does the collection of basic words seem to be filled?
-	collection = f"{settings['WORDS_COLLECTION']}_basic"
-	number_of_basic_words = db[collection].count_documents({})  # returns 0 for nonexisting base
-	basic_vocab_needed = number_of_basic_words < 1000  # let's say this is enough
+	# does the collection of generic words seem to be filled?
+	collection = f"{settings['WORDS_COLLECTION']}_generic"
+	number_of_generic_words = db[collection].count_documents({})  # returns 0 for nonexisting base
+	generic_vocab_needed = number_of_generic_words < 1000  # let's say this is enough
 
 	# do we have translation for the topic
 	collection = settings['TRANSLATION_COLLECTION']
@@ -42,24 +42,27 @@ def prerequisites(settings):
 
 	client.close()
 
-	return [basic_vocab_needed, translation_needed]
+	return [generic_vocab_needed, translation_needed]
 
 
 # callback function for the case when we need to exit early
 def spider_closing(spider, **kwargs):
+	# finished is ok
 	# log.msg("Early shutdown", level=log.INFO)
-	print("CrawlerRunner: Early shutdown.")
-	reactor.stop()
-
+	if kwargs and "reason" in kwargs and kwargs['reason'] != "finished":
+		print("CrawlerRunner: Early shutdown.")
+		print("The reason quoted:", kwargs['reason'])
+		reactor.stop()
+	# otherwise we do not care
 
 def spider_warning(spider, **kwargs):
 	print("CrawlerRunner: moving on.")
 
 
 @defer.inlineCallbacks
-def crawl(runner, basic_vocab_needed, translation_needed):
+def crawl(runner, generic_vocab_needed, translation_needed):
 
-	if basic_vocab_needed:
+	if generic_vocab_needed:
 		# if this spider breaks down we can still limp along
 		# though the results may be skewed toward generic words, irrelevant to the topic
 		crawler = runner.create_crawler(GenericVocabSpider)
@@ -72,7 +75,7 @@ def crawl(runner, basic_vocab_needed, translation_needed):
 		crawler.signals.connect(spider_closing, signal=signals.spider_closed)
 		yield crawler.crawl()
 
-	# The basic words are from a site that is supposed
+	# The generic words are from a site that is supposed
 	# to be surefire relevant to the topic -  we are currently using Wikipedia.
 	# This may fail if, for example, Wikipedia does not have a page on our topic.
 	# However, we can move on without that word set.
@@ -80,8 +83,8 @@ def crawl(runner, basic_vocab_needed, translation_needed):
 	crawler.signals.connect(spider_warning, signal=signals.spider_closed)
 	yield crawler.crawl()
 
-	# Extended vocab is more of a fishing expedition, so it can fail.
-	# Our vocab will be somewhat smaller in that case.
+	# # Extended vocab is more of a fishing expedition, so it can fail.
+	# # Our vocab will be somewhat smaller in that case.
 	crawler = runner.create_crawler(ExtendedTopicVocabSpider)
 	crawler.signals.connect(spider_warning, signal=signals.spider_closed)
 	yield crawler.crawl()
@@ -92,9 +95,12 @@ def report(settings):
 	client = pymongo.MongoClient(settings["MONGODB_URI"])
 	db = client[settings["MONGODB_DB"]]
 
-	# does the collection of basic words seem to be filled?
+	# does the collection of generic words seem to be filled?
 	collection = f"{settings['WORDS_COLLECTION']}_{settings['TOPIC']}"
-	for line in db[collection].find({'count': {'$gt': 10}}).sort("count", -1):
+	print()
+	print()
+	print("\t".join(["word", "frequency"]))
+	for line in db[collection].find({'count': {'$gt': 20}}).sort("count", -1):
 		print("\t".join([str(v) for v in line.values()]))
 
 
@@ -109,14 +115,14 @@ def main():
 	settings = get_project_settings()
 	settings.set("TOPIC", topic)
 
-	# do we need basic vocab, do we need topic translation?
-	[basic_vocab_needed, translation_needed] = prerequisites(settings)
-	print(f"Do we need basic vocab? {basic_vocab_needed}.")
+	# do we need generic vocab, do we need topic translation?
+	[generic_vocab_needed, translation_needed] = prerequisites(settings)
+	print(f"Do we need generic vocab? {generic_vocab_needed}.")
 	print(f"Do we need topic translation? {translation_needed}.")
 
 	runner = CrawlerRunner(settings)
 
-	crawl(runner, basic_vocab_needed, translation_needed)
+	crawl(runner, generic_vocab_needed, translation_needed)
 	reactor.run()  # the script will block here until the last crawl call is finished
 
 	report(settings)
