@@ -63,4 +63,4 @@ class TranslationSpider(VocabSpider):
 			raise CloseSpider(f"Chinese translation for the topic '{self.topic}' not found.")
 		else:
 			self._store_translation(item)
-		# return item  # again I need to return this item for the purposes of (contract) testing
+		return item  # again I need to return this item for the purposes of (contract) testing

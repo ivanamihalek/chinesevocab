@@ -15,7 +15,7 @@ SPIDER_MODULES = ['chinesevocab.spiders']
 NEWSPIDER_MODULE = 'chinesevocab.spiders'
 
 LOG_ENABLED = True
-LOG_LEVEL = "INFO"  # too much noise otherwise
+LOG_LEVEL = "ERROR"  # too much noise otherwise
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'chinesevocab (+http://www.yourdomain.com)'
