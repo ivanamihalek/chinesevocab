@@ -62,7 +62,7 @@ class ChinesevocabSpiderMiddleware:
         # Called when a spider or process_spider_input() method
         # (from other spider middleware) raises an exception.
         if isinstance(exception, CloseSpider):
-            print("CloseSpider exception:", exception.reason)
+            spider.logger.error("CloseSpider exception: " + exception.reason)
         # Should return either None or an iterable of Request or item objects.
         return
 

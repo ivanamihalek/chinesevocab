@@ -37,7 +37,7 @@ class TextParserComponent:
         return jieba.cut(chstr, cut_all=False)
 
     def process_item(self, item, spider):
-        print("In process_item in TextParserComponent.")
+        spider.logger.info("In process_item in TextParserComponent.")
         processedItem = TokenSetItem()
         processedItem['tokens'] = self._tokenize(item)
         processedItem['collection'] = item['collection']

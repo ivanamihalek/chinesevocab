@@ -56,13 +56,19 @@ echo; echo "##############################"
 echo running contract test for generic
 scrapy check generic
 
+##################################################
+# hack the settings.py to the values that we need
+sed 's/MONGODB_DB/#MONGODB_DB/' ../settings.py -i
+echo 'MONGODB_DB  = "cvkb_mockup"' >> ../settings.py
+sed 's/LOG_LEVEL/#LOG_LEVEL/' ../settings.py -i
+echo 'LOG_LEVEL = "ERROR"' >> ../settings.py
+# drop the mockup db if it exists
+mongo --eval "db.dropDatabase()" cvkb_mockup   > /dev/null 2>&1
+
 ## test the collection produced
 echo; echo "##############################"
 echo checking the size of the produced collection of generic words
-sed 's/MONGODB_DB/#MONGODB_DB/' ../settings.py -i
-echo 'MONGODB_DB  = "cvkb_mockup"' >> ../settings.py
-# drop the mockup db
-mongo --eval "db.dropDatabase()" cvkb_mockup   > /dev/null 2>&1
+
 # run the spider
 scrapy crawl generic > /dev/null 2>&1
 # count words stored

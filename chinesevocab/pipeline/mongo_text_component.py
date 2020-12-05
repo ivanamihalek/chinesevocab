@@ -18,15 +18,9 @@
 #    Contact: ivana.mihalek@gmail.com
 
 
-# useful for handling different item types with a single interface
-import logging
 import pymongo
-from itemadapter import ItemAdapter
 
 
-# for MongoDB dos see https://docs.mongodb.com/manual/installation/
-# make sure mongo is running: sudo systemctl start mongod
-# check running: sudo systemctl status mongod
 class MongoTextComponent:
 
     def __init__(self, mongo_uri, mongo_db, mongo_collection):
@@ -50,7 +44,7 @@ class MongoTextComponent:
         self.client.close()
 
     def process_item(self, item, spider):
-        print("In process_item in MongoTextComponent.")
+        spider.logger.info("In process_item in MongoTextComponent.")
         # note the insert/update/upsert
         # if nonexistent, the DB will be created
         # without checking: insert_one(ItemAdapter(item).asdict())

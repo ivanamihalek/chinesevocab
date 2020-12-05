@@ -2,6 +2,7 @@
 *.html
 *.json
 *.log
+*.tsv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

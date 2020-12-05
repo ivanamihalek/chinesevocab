@@ -19,11 +19,9 @@ import re
 #
 #    Contact: ivana.mihalek@gmail.com
 
+from scrapy import Spider
 
 from urllib.parse import unquote
-
-from scrapy import Spider, signals
-from scrapy.exceptions import CloseSpider
 from pymongo import MongoClient
 
 from chinesevocab.items import ChineseTextItem
@@ -33,7 +31,6 @@ from chinesevocab.items import ChineseTextItem
 # TranslationSpider, TopicVocabSpider, and ExtendedTopicVocabSpider inherit from here
 # and implement the abstract methods
 class VocabSpider(Spider):
-	# TODO skip website we scraped
 
 	# The settings attribute is set in the base Spider class after the spider is initialized.
 	# If you want to use the settings before the initialization (e.g., in your spider’s __init__() method),
@@ -51,7 +48,8 @@ class VocabSpider(Spider):
 		mongo_db  = crawler.settings['MONGODB_DB']
 		self.client = MongoClient(mongo_uri)
 		self.db = self.client[mongo_db]
-		self.collection = crawler.settings['TRANSLATION_COLLECTION']
+		self.text_collection = crawler.settings['TEXT_COLLECTION']
+		self.translation_collection = crawler.settings['TRANSLATION_COLLECTION']
 		# if we ran from command line, the topic should be set here
 		# (unless the user omitted to do so), however:
 		if getattr(self, "topic", None) is None:
@@ -64,10 +62,24 @@ class VocabSpider(Spider):
 		# need to pass them otherwise I lose them as I inherit
 		return cls(crawler, **kwargs)
 
+	def _topic_translation(self):
+		# the second argument is projection, it specifies which arguments to return (1=return, 0=do not)
+		ret = self.db[self.translation_collection].find_one({'english': {'$eq': self.topic.replace("_", " ")}}, {'chinese': 1})
+		return None if (not ret or 'chinese' not in ret or not ret['chinese']) else ret['chinese']
+
+	def _store_translation(self, item):
+		mongo_filter = {'chinese': item['chinese']}
+		mongo_update = {'$set': dict(item)}
+		self.db[self.translation_collection].find_one_and_update(mongo_filter, mongo_update, upsert=True)
+
+	def _page_already_in_db(self, url):
+		# find_one returns None if no matching document is found
+		ret = self.db[self.text_collection].find_one({'url': {'$eq': url}})
+		return ret is not None
+
 	def _package_chinese_item(self, unquoted_url, jumbo_string):
-		topic = getattr(self, 'topic', None)
 		item = ChineseTextItem()
-		item['collection'] = f"words_{topic}"
+		item['collection'] = f"words_{self.topic}"
 		item['url'] = unquoted_url
 		item['text'] = jumbo_string
 		return item
@@ -88,16 +100,6 @@ class VocabSpider(Spider):
 			if number_of_chinese_characters/len(spaced_out_chunk) < .8: continue
 			usable_chunks.append(spaced_out_chunk)
 		return self._package_chinese_item(unquoted_url, "".join(usable_chunks))
-
-	def _topic_translation(self):
-		# the second argument is projection, it specifies which arguments to return (1=return, 0=do not)
-		ret = self.db[self.collection].find_one({'english': {'$eq': self.topic.replace("_", " ")}}, {'chinese': 1})
-		return None if (not ret or 'chinese' not in ret or not ret['chinese']) else ret['chinese']
-
-	def _store_translation(self, item):
-		mongo_filter = {'chinese': item['chinese']}
-		mongo_update = {'$set': dict(item)}
-		self.db[self.collection].find_one_and_update(mongo_filter, mongo_update, upsert=True)
 
 	def close(self, **kwargs):
 		self.client.close()

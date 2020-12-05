@@ -23,8 +23,8 @@
 # You can provide command line arguments to your spiders by using the -a option when running them:
 # scrapy crawl extended -a topic=genome
 # These arguments are passed to the Spider’s __init__ method and become spider attributes by default.
-# Suggested use scrapy crawl plain -O plain.json -a topic=genome 2>&1 | grep DEBUG > debug.log
 # Note: by default, Scrapy filters out duplicated requests to URLs already visited.
+# scrapy crawl extended -a topic=genome  2>&1 | grep "\[extended\] INFO"
 
 import re
 
@@ -93,23 +93,31 @@ class ExtendedTopicVocabSpider(VocabSpider):
 			url = self._strip_link(link.url)
 			if not url: continue
 			clean_url = self._scrub_url(url)
+			if self._page_already_in_db(url):
+				self.logger.info(f"***** {url} already seen")
+				continue
 			yield scrapy.Request(url=clean_url, callback=self.parse)
 
 	def start_requests(self):  # must return an iterable of Requests
-		print(f"\nExtendedTopicVocabSpider in start_requests, topic is: {self.topic}")
+		""" A Scrapy framework hook. """
+		if not self.topic:
+			self.logger.error("Topic not set in TranslationSpider. ")
+			self.logger.error("If running this spider only, you can set it on cmd line with -a topic=<topic>.")
+			return None
+		self.logger.info(f"\nExtendedTopicVocabSpider in start_requests, topic is: {self.topic}.")
 		topic_chinese = self._topic_translation()
 		if not topic_chinese:  # never figured out how to catch  an exception thrown here
-			print(f"No topic translation found for {self.topic}.")
+			self.logger.error(f"No topic translation found for {self.topic}.")
 			return
 		else:
 			path = f"search?q={topic_chinese}"
 			urls = [f"https://{self.start_netloc}/{path}&start={i*10}" for i in range(self.number_of_start_pages)]
 			for url in urls:
-				print(f"request url: ***  {url}")
+				self.logger.info(f"request url: ***  {url}")
 				yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):
-		""" This function follows links from a bigger search engine (Google) and extracts chinese texts from them
+		""" A Scrapy framework hook. Follows links from a bigger search engine (Google) and extracts chinese text.
 		@url https://zh.wikipedia.org/zh-cn/基因组
 		@returns items 1
 		@scrapes collection url text
@@ -119,9 +127,9 @@ class ExtendedTopicVocabSpider(VocabSpider):
 		# not sure how to check the extracted links
 		if urlparse(response.url).netloc == self.start_netloc:
 			# use google pages to extract links to follow
-			print(f"extracting links from  {response.url}")
+			self.logger.info(f"extracting links from  {response.url}")
 			return self._extract_links(response)
 		else:
 			# we should be on a page with something useful
-			print(f"extracting content from  {response.url}")
+			self.logger.info(f"extracting content from  {response.url}")
 			return self._extract_chinese_content(response)  # inherited from vocab_spider

@@ -51,6 +51,15 @@ else
   echo copied ../settings.py to ../bkps/settings.py
 fi
 
+##################################################
+# hack the settings.py to the values that we need
+sed 's/MONGODB_DB/#MONGODB_DB/' ../settings.py -i
+echo 'MONGODB_DB  = "cvkb_mockup"' >> ../settings.py
+sed 's/LOG_LEVEL/#LOG_LEVEL/' ../settings.py -i
+echo 'LOG_LEVEL = "ERROR"' >> ../settings.py
+# drop the mockup db if it exists
+mongo --eval "db.dropDatabase()" cvkb_mockup   > /dev/null 2>&1
+
 ## contract test
 echo; echo "##############################"
 echo running contract test for translation
@@ -59,10 +68,7 @@ scrapy check translation
 ## test the translation stored
 echo; echo "##############################"
 echo checking the translation stored
-sed 's/MONGODB_DB/#MONGODB_DB/' ../settings.py -i
-echo 'MONGODB_DB  = "cvkb_mockup"' >> ../settings.py
-# drop the mockup db
-mongo --eval "db.dropDatabase()" cvkb_mockup   > /dev/null 2>&1
+
 # run the spider
 scrapy crawl translation -a topic=genome > /dev/null 2>&1
 # check the translation stored
@@ -79,12 +85,12 @@ fi
 echo; echo "##############################"
 echo translation failure test
 ## the full error message will be something like "CloseSpider exception: Chinese translation for the topic 'web scraping' not found."
-ret=`scrapy crawl translation -a topic="web_scraping" | tail -n1 | grep -i "CloseSpider exception: Chinese translation"`
+ret=`scrapy crawl translation -a topic="web_scraping" 2>&1 | grep "ERROR: CloseSpider exception: Chinese translation"`
 if [[ $ret > 0 ]]
 then
   tput setaf 4; echo "translation not found handled gracefully (OK)";  tput sgr0
 else
-  tput setaf 1; echo "Warning: unexpected behavior on translation  not found.";  tput sgr0
+  tput setaf 1; echo "Warning: unexpected behavior when translation not found.";  tput sgr0
 fi
 
 

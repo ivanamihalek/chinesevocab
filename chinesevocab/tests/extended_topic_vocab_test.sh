@@ -56,17 +56,21 @@ echo; echo "##############################"
 echo running contract test for extended
 scrapy check extended
 
+##################################################
+# hack the settings.py to the values that we need
+sed 's/MONGODB_DB/#MONGODB_DB/' ../settings.py -i
+echo 'MONGODB_DB  = "cvkb_mockup"' >> ../settings.py
+sed 's/LOG_LEVEL/#LOG_LEVEL/' ../settings.py -i
+echo 'LOG_LEVEL = "ERROR"' >> ../settings.py
+# drop the mockup db if it exists
+mongo --eval "db.dropDatabase()" cvkb_mockup   > /dev/null 2>&1
+
 ## failure test
 echo; echo "##############################"
 echo failure test for extended spider
-# what happens if we don't have the translation
-sed 's/MONGODB_DB/#MONGODB_DB/' ../settings.py -i
-echo 'MONGODB_DB  = "cvkb_mockup"' >> ../settings.py
-## drop the mockup db - make sure we don't have the translation
-mongo --eval "db.dropDatabase()" cvkb_mockup   > /dev/null 2>&1
 
 echo "testing the case of no translation found"
-ret=`scrapy crawl extended -a topic="web_crawling" | tail -n1 | grep -i "No topic translation"`
+ret=`scrapy crawl topic -a topic="web_crawling"  2>&1 | grep "ERROR: No topic translation"`
 echo $ret
 if [[ $ret > 0 ]]
 then

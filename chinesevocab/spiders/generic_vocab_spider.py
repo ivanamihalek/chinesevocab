@@ -20,24 +20,19 @@
 #    Contact: ivana.mihalek@gmail.com
 
 
-# to use directly - though here running from fun.py would be preferred
+# to use directly - though here running from run.py would be preferred
 # scrapy crawl generic
-# These arguments are passed to the Spider’s __init__ method and become spider attributes by default.
+# If the LOG_LEVEL is set to INFO in settings.py, on can filter the output as
+# scrapy crawl generic  2>&1 | grep "\[generic\] INFO"
 
 import scrapy
+from scrapy import Spider
 
 from chinesevocab.items import TokenSetItem
 from chinesevocab.pipeline.mongo_words_component import MongoWordsComponent
 
-# TODO patch for
-# 一个
-# 这种
-# 一种
-# 这个
-# 不是
 
-
-class GenericVocabSpider(scrapy.Spider):
+class GenericVocabSpider(Spider):
 	# name must be unique within a project
 	# => note this is how we invoke it from the scrapy crawl command
 	name = "generic"
@@ -52,6 +47,7 @@ class GenericVocabSpider(scrapy.Spider):
 		self.collection = "words_generic"  # the collection to store in
 
 	def start_requests(self):  # must return an iterable of Requests
+		self.logger.info(f"GenericVocabSpider in start_requests.")
 		urls = []
 		# wikipedia most frequent words
 		raw_pages_domain = "https://en.wiktionary.org"
@@ -77,7 +73,7 @@ class GenericVocabSpider(scrapy.Spider):
 		@returns items 1
 		@scrapes collection tokens
 		"""
-		print(f"in generic_vocab_spider parse, {response.url}")
+		self.logger.info(f"GenericVocabSpider in parse, {response.url}.")
 		item = TokenSetItem()
 		# the components that should act on this item
 		item['collection'] = self.collection

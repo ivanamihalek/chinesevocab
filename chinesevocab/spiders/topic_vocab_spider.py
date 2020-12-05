@@ -23,10 +23,10 @@
 # You can provide command line arguments to your spiders by using the -a option when running them:
 # scrapy crawl topic -a topic=genome
 # These arguments are passed to the Spider’s __init__ method and become spider attributes by default.
-# Suggested use scrapy crawl plain -O plain.json -a topic=genome 2>&1 | grep DEBUG > debug.log
+# Grepping for info log:
+# scrapy crawl topic -a topic=genome  2>&1 | grep "\[topic\] INFO"
 
 import scrapy
-from scrapy import Spider
 from scrapy.exceptions import CloseSpider
 
 from chinesevocab.items import ChineseTextItem
@@ -71,15 +71,24 @@ class TopicVocabSpider(VocabSpider):
 		return item
 
 	def start_requests(self):  # must return an iterable of Requests
-		print(f"\nTopicVocabSpider in start_requests, topic is: {self.topic}")
+		if not self.topic:
+			self.logger.error("Topic not set in TranslationSpider. ")
+			self.logger.error("If running this spider only, you can set it on cmd line with -a topic=<topic>.")
+			return
+		self.logger.info(f"TopicVocabSpider in start_requests, topic is: {self.topic}")
 		topic_chinese = self._topic_translation()
 		if not topic_chinese:  # never figured out how to catch  an exception thrown here
-			print(f"No topic translation found for {self.topic}.")
+			self.logger.error(f"No topic translation found for {self.topic}.")
 			return
+
 		else:
 			url = f"https://{self.start_netloc}/zh-cn/{topic_chinese}"
-			print(f"request url: ***  {url}")
-			yield scrapy.Request(url=url, callback=self.parse)
+			if self._page_already_in_db(url):
+				self.logger.info(f"{url} visited already")
+				return
+			else:
+				self.logger.info(f"request url: ***  {url}")
+				yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):  # called to handle the response downloaded
 		""" This function parses Chinese language Wikipedia page related to the topic.
@@ -87,14 +96,11 @@ class TopicVocabSpider(VocabSpider):
 		@returns items 1
 		@scrapes collection url text
 		"""
-		print(f"TopicVocabSpider in parse.")
-		print(response)
+		self.logger.info(f"TopicVocabSpider in parse.")
 		topic = getattr(self, 'topic', "anon")
 		if response.status == 404:  # page not found
 			# CloseSpider can be raised in spider callback, i.e. here
 			raise CloseSpider(f"Wiki page for the topic '{topic}' not found.")
 		# we're ok, format the return item
 		return self._parse_wiki(topic, response)
-
-# 网络搜寻
 

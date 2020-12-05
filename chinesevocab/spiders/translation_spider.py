@@ -23,13 +23,18 @@
 # You can provide command line arguments to your spiders by using the -a option when running them:
 # scrapy crawl translation -a topic=genome
 # These arguments are passed to the Spider’s __init__ method and become spider attributes by default.
-# Suggested use scrapy crawl plain -O plain.json -a topic=genome 2>&1 | grep DEBUG > debug.log
+# Not clear how to get rid of the logging info from the framework.  If the LOG_LEVEL is set to ERROR in settings.py,
+# it overrides local local debug level in spiders.
+# If the LOG_LEVEL is set to INFO in settings.py, on can filter the output as
+# scrapy crawl translation -a topic=genome 2>&1 | grep "\[translation\] INFO"
+# (Otherwise, there are some byzantine instructions here https://docs.python.org/3/library/logging.html#filter-object)
+
 
 import scrapy
+
 from scrapy.exceptions import CloseSpider
 
 from chinesevocab.items import TranslationItem
-
 from chinesevocab.spiders.vocab_spider import VocabSpider
 
 
@@ -40,15 +45,14 @@ class TranslationSpider(VocabSpider):
 	start_netloc = "www.linguabot.com"
 
 	def start_requests(self):  # must return an iterable of Requests
+		# the framer already proves logger with the name self.name
 		# if we started this spider only from the command line, but did not provide the topic, for example
 		if not self.topic:
-			print("Topic not set in TranslationSpider. ")
-			print("If running this spider only, you can set it on cmd line with -a topic=<topic>.")
+			self.logger.error("Topic not set in TranslationSpider.")
+			self.logger.error("If running this spider only, you can set it on cmd line with -a topic=<topic>.")
 			return None
-		print(f"TranslationSpider in start_requests, topic is: {self.topic}")
+		self.logger.info(f"TranslationSpider in start_requests, topic is: {self.topic}.")
 		url = f"http://{self.start_netloc}/dictLookup.php?word={self.topic.replace('_', '+')}"
-		# scrapy.log has been deprecated alongside its functions in favor of explicit calls to the
-		# Python standard logging.
 		yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):
@@ -57,7 +61,7 @@ class TranslationSpider(VocabSpider):
 		@returns items 1
 		@scrapes chinese english pinyin
 		"""
-		print(f"TranslationSpider in parse")
+		self.logger.info(f"TranslationSpider in parse")
 		# this is for the purposes of contract test runs
 		# in an actual run we should not get to here if the self.topic is not set
 		if getattr(self, "topic", None) is None:  self.topic = "genome"
@@ -77,10 +81,9 @@ class TranslationSpider(VocabSpider):
 				item['chinese'] = chinese
 				item['english'] = english
 				item['pinyin'] = pinyin.replace("[", "").replace("]", "").strip()
-				print(f"{english} ---> {chinese}")
+				self.logger.info(f"{english} ---> {chinese}")
 				break
 		if not item:  # the rest of the pipeline depends on it, so we cannot move on without it
-			print("#################################")
 			raise CloseSpider(f"Chinese translation for the topic '{self.topic}' not found.")
 		else:
 			self._store_translation(item)
