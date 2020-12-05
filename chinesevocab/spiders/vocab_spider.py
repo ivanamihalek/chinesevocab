@@ -97,6 +97,7 @@ class VocabSpider(Spider):
 	def _extract_chinese_content(self, response):
 		""" Extracts from response page text that is at least 80% Chinese. """
 
+		# TODO filter out or transcribe traditional Chinese to simplified
 		unquoted_url = unquote(unquote(response.url))
 		response_chunks = response.css('*::text').getall()
 		if not response_chunks: return

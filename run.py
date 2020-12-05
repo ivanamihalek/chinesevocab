@@ -97,7 +97,7 @@ def patches(settings):
 	# For some reason, the generic word lists that I am aware of, do not include
 	# some very common  words such as "one", "first", "some", "this kind", and even "not."
 	# We want to exclude these words from topic-special lists.
-	patch_words = ["一个", "这种", "一种", "这个", "不是", "第一", "时"]
+	patch_words = ["一个", "这种", "一种", "这个", "不是", "第一", "时", "英语"]
 	requests = []
 	for word in patch_words:
 		requests.append(UpdateOne({'_id': word}, {"$inc": {"count": 1}}, upsert=True))
