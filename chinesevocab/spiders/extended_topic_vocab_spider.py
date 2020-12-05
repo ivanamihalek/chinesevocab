@@ -65,7 +65,7 @@ class ExtendedTopicVocabSpider(VocabSpider):
 	link_extractor = LinkExtractor()
 
 	def _strip_link(self, compound_link):
-		""" Extracts target links redirecting back to the search engine. """
+		""" Extracts targets from links redirecting back to the search engine. """
 
 		compound_pieces = compound_link.split("=")
 		if len(compound_pieces)<2: return None

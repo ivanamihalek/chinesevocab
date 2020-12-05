@@ -22,8 +22,11 @@ import pymongo
 
 
 class MongoTextComponent:
+    """ Stores extracted text chunks, together with the source url, in the local DB. """
 
     def __init__(self, mongo_uri, mongo_db, mongo_collection):
+        """ Stores DB-related names. """
+
         self.mongo_uri = mongo_uri
         self.mongo_db = mongo_db
         self.collection = mongo_collection
@@ -37,13 +40,19 @@ class MongoTextComponent:
         )
 
     def open_spider(self, spider):
+        """ Opens DB connection. """
+
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
 
     def close_spider(self, spider):
+        """ Closes DB connection. """
+
         self.client.close()
 
     def process_item(self, item, spider):
+        """ Stores text chunk and url in the local DB. """
+
         spider.logger.info("In process_item in MongoTextComponent.")
         # note the insert/update/upsert
         # if nonexistent, the DB will be created

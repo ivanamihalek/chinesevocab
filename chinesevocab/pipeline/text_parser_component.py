@@ -25,11 +25,11 @@ from chinesevocab.items import TokenSetItem
 
 
 class TextParserComponent:
-
-    def __init__(self):
-        pass
+    """ Tokenizes text chunk to be stored in the following pipeline component. """
 
     def _tokenize(self, item):
+        """  Tokenizes text chunk using Jieba. """
+
         # get rid of non-chinese characters
         matches = re.findall(r"[\u4e00-\u9FFF]", item['text'])
         chstr = "".join(matches)
@@ -37,6 +37,8 @@ class TextParserComponent:
         return jieba.cut(chstr, cut_all=False)
 
     def process_item(self, item, spider):
+        """  Formats the item object defined in items.py. """
+
         spider.logger.info("In process_item in TextParserComponent.")
         processedItem = TokenSetItem()
         processedItem['tokens'] = self._tokenize(item)

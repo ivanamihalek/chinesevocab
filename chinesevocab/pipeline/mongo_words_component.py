@@ -30,8 +30,11 @@ from pymongo.errors import BulkWriteError
 
 
 class MongoWordsComponent:
+    """ Stores individual words to local DB. """
 
     def __init__(self, mongo_uri, mongo_db, words_collection):
+        """ Stores DB-related names. """
+
         self.mongo_uri = mongo_uri
         self.mongo_db = mongo_db
         self.generic_words_collection = words_collection+"_generic"
@@ -45,14 +48,20 @@ class MongoWordsComponent:
         )
 
     def open_spider(self, spider):
+        """ Opens DB connection. """
+
         self.client = MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
         self.generic_words = set([doc["_id"] for doc in self.db[self.generic_words_collection].find()])
 
     def close_spider(self, spider):
+        """ Closes DB connection. """
+
         self.client.close()
 
     def process_item(self, item, spider):
+        """ Stores words DB. If already present, increases the counter.  """
+
         spider.logger.info(f"In process_item in MongoWordsComponent.")
         # the item now is a set of tokens (words)
         collection = item['collection']
