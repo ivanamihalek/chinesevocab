@@ -1,6 +1,6 @@
 # ChineseVocab - a Scrapy project
 
-Chinesevocab collects several hundred non-generic words related to a specified topic.
+Chinesevocab collects (Mandarin) Chinese words related to a specified topic.
 
 ## Dependencies
 [Scrapy](https://scrapy.org/), an open source framework for extracting the website data.
@@ -18,11 +18,11 @@ Run with
    ```./run.py <topic>```
 
 The topic can be something like "genome" or "fashion."
-If the topic consist of two or three words you can link them with underscore,
+If the topic consists of two or three words you can link them with underscore,
 for example "The_Internet", or "elementary_particle," but keep in mind that this
 compound term should be discoverable in a dictionary for the pipeline to run as planned.
    
-The project consist of four spider, and ./run.py runs all of them in the order in
+The project consist of four spiders, and ./run.py runs all of them in the order in
  which they are supposed to be run:
  1. Fill the database collection of generic words (to be able to eliminate them later)
     This will be run only once - if the collection exists, the step is skipped.
@@ -53,7 +53,7 @@ you may also wish to use the [cedict parser](https://www.mdbg.net/chinese/dictio
 
 Alternatively, 
 [Google Sheets](https://www.mamababymandarin.com/automatically-translate-english-to-chinese-with-google-sheets/)
-provides a cute trick to translate a shortish list like produced here.
+provides a cute trick to translate a shortish list like the oneproduced here.
 
 ## Testing
 Use `./run_tests.sh` from the top directory to run all tests at once. Alternatively cd to chinesevocab/tests
