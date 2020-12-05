@@ -1,4 +1,4 @@
-# ChineseVocab - a Scrapy project
+# ChineseVocab - a Scrapy exercise
 
 Chinesevocab collects (Mandarin) Chinese words related to a specified topic.
 
@@ -18,7 +18,7 @@ Run with
    ```./run.py <topic>```
 
 The topic can be something like "genome" or "fashion."
-If the topic consists of two or three words you can link them with underscore,
+If the topic consistsq of two or three words you can link them with underscore,
 for example "The_Internet", or "elementary_particle," but keep in mind that this
 compound term should be discoverable in a dictionary for the pipeline to run as planned.
    

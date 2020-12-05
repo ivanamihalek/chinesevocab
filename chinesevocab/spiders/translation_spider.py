@@ -39,12 +39,14 @@ from chinesevocab.spiders.vocab_spider import VocabSpider
 
 
 class TranslationSpider(VocabSpider):
-	# for the purposes of this demo, the extended search consists
-	# of the first three pages returned by google
+	""" Looks up the topic translation on the internet. """
+
 	name = "translation"
 	start_netloc = "www.linguabot.com"
 
 	def start_requests(self):  # must return an iterable of Requests
+		""" Formats the url for the dictionary page. """
+
 		# the framer already proves logger with the name self.name
 		# if we started this spider only from the command line, but did not provide the topic, for example
 		if not self.topic:
@@ -57,10 +59,12 @@ class TranslationSpider(VocabSpider):
 
 	def parse(self, response, **kwargs):
 		""" This function parses a translation page.
+
 		@url http://www.linguabot.com/dictLookup.php?word=genome
 		@returns items 1
 		@scrapes chinese english pinyin
 		"""
+
 		self.logger.info(f"TranslationSpider in parse")
 		# this is for the purposes of contract test runs
 		# in an actual run we should not get to here if the self.topic is not set

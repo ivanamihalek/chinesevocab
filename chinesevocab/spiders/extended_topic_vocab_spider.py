@@ -42,6 +42,8 @@ from chinesevocab.spiders.vocab_spider import VocabSpider
 
 
 class ExtendedTopicVocabSpider(VocabSpider):
+	""" Scrapes pages for the extended topic vocabulary. """
+
 	# for the purposes of this demo, the extended search consists
 	# of the first three pages returned by google
 	name = "extended"
@@ -63,6 +65,8 @@ class ExtendedTopicVocabSpider(VocabSpider):
 	link_extractor = LinkExtractor()
 
 	def _strip_link(self, compound_link):
+		""" Extracts target links redirecting back to the search engine. """
+
 		compound_pieces = compound_link.split("=")
 		if len(compound_pieces)<2: return None
 		if compound_pieces[1][:4] != "http": return None
@@ -73,6 +77,8 @@ class ExtendedTopicVocabSpider(VocabSpider):
 		return url
 
 	def _scrub_url(self, url):
+		""" For Chinese Wikipedia cases, selects Mainland China flavor of Mandarin. """
+
 		unquoted_url = unquote(unquote(url))  # not sure what's with this, but it works
 		parsed = urlparse(unquoted_url)
 		if parsed.netloc in ["zh.wikipedia.org", "zh.m.wikibooks.org"]:
@@ -87,6 +93,8 @@ class ExtendedTopicVocabSpider(VocabSpider):
 			return unquoted_url
 
 	def _extract_links(self, response):
+		""" Uses LinkExtractor to extract links for the search engine page. """
+
 		for link in self.link_extractor.extract_links(response):
 			# google is going back to its whatever wih the mangled link
 			# I just need the resource url (nice of them to keep it  unmangled)
@@ -99,7 +107,8 @@ class ExtendedTopicVocabSpider(VocabSpider):
 			yield scrapy.Request(url=clean_url, callback=self.parse)
 
 	def start_requests(self):  # must return an iterable of Requests
-		""" A Scrapy framework hook. """
+		""" Follows links from the search engine, and redirect targets to parsing.  """
+
 		if not self.topic:
 			self.logger.error("Topic not set in TranslationSpider. ")
 			self.logger.error("If running this spider only, you can set it on cmd line with -a topic=<topic>.")
@@ -118,6 +127,7 @@ class ExtendedTopicVocabSpider(VocabSpider):
 
 	def parse(self, response, **kwargs):
 		""" A Scrapy framework hook. Follows links from a bigger search engine (Google) and extracts chinese text.
+
 		@url https://zh.wikipedia.org/zh-cn/基因组
 		@returns items 1
 		@scrapes collection url text

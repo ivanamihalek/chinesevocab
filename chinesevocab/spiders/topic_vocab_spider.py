@@ -40,6 +40,7 @@ from chinesevocab.spiders.vocab_spider import VocabSpider
 
 
 class TopicVocabSpider(VocabSpider):
+	""" Scrapes Chinese Wikipedia page for the core topic vocabulary. """
 
 	# name must be unique within a project
 	# => note this is how we invoke it from the scrapy crawl command
@@ -52,11 +53,13 @@ class TopicVocabSpider(VocabSpider):
 			TextParserComponent: 200,
 			MongoWordsComponent: 300},
 	}
-	# handle page not found explicitly
+	# explicitly handle a page not found
 	# (https://docs.scrapy.org/en/latest/topics/spider-middleware.html#module-scrapy.spidermiddlewares.httperror)
 	handle_httpstatus_list = [404]
 
 	def _parse_wiki(self, topic, response):
+		""" Extracts Chinese chracters from the Wikipedia page. """
+
 		# get paragraph elements, and all of their children (boldface, anchor etc)
 		response_chunks = response.css('p *::text').getall()
 		if not response_chunks:
@@ -71,6 +74,8 @@ class TopicVocabSpider(VocabSpider):
 		return item
 
 	def start_requests(self):  # must return an iterable of Requests
+		""" Formats url and checks if it is already present in the DB """
+
 		if not self.topic:
 			self.logger.error("Topic not set in TranslationSpider. ")
 			self.logger.error("If running this spider only, you can set it on cmd line with -a topic=<topic>.")
@@ -92,6 +97,7 @@ class TopicVocabSpider(VocabSpider):
 
 	def parse(self, response, **kwargs):  # called to handle the response downloaded
 		""" This function parses Chinese language Wikipedia page related to the topic.
+
 		@url https://zh.wikipedia.org/zh-cn/基因组
 		@returns items 1
 		@scrapes collection url text

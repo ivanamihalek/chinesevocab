@@ -33,6 +33,8 @@ from chinesevocab.pipeline.mongo_words_component import MongoWordsComponent
 
 
 class GenericVocabSpider(Spider):
+	""" Scrapes pages containing lists of common Mandarin words. """
+
 	# name must be unique within a project
 	# => note this is how we invoke it from the scrapy crawl command
 	name = "generic"
@@ -43,10 +45,14 @@ class GenericVocabSpider(Spider):
 	# today I'll just start with the list of pages that I know contain the generic mandarin vocab (HSK 1-hsk_max_level)
 	# these pages are plain text, so no html/css parsing involved
 	def __init__(self, **kwargs):
+		""" Sets the name of the collection of common Mandarin words in the local DB. """
+
 		super().__init__(**kwargs)
 		self.collection = "words_generic"  # the collection to store in
 
 	def start_requests(self):  # must return an iterable of Requests
+		""" Formats urls for the word-list pages. """
+
 		self.logger.info(f"GenericVocabSpider in start_requests.")
 		urls = []
 		# wikipedia most frequent words
@@ -65,7 +71,8 @@ class GenericVocabSpider(Spider):
 			yield scrapy.Request(url=url, callback=self.parse)
 
 	def parse(self, response, **kwargs):  # called to handle the response downloaded
-		""" This function parses pages containing lists of words.
+		""" This function parses pages containing lists of common Mandarin words.
+
 		@url https://en.wiktionary.org/wiki/Appendix:Mandarin_Frequency_lists/1-1000
 		@returns items 1
 		@scrapes collection tokens
