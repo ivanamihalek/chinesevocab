@@ -17,8 +17,8 @@ Run with
 
    ```./run.py <topic>```
 
-The topic can be something like "genome" or "fashion."
-If the topic consistsq of two or three words you can link them with underscore,
+The topic can be something like "genome" or "fashion." If the topic consistsq of two or three words 
+you can link them with underscore,
 for example "The_Internet", or "elementary_particle," but keep in mind that this
 compound term should be discoverable in a dictionary for the pipeline to run as planned.
    
