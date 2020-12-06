@@ -27,10 +27,10 @@ The project consist of four spiders, and ./run.py runs all of them in the order 
  1. [generic_vocab_spider.py](./chinesevocab/spiders/generic_vocab_spider.py) 
     fills the database collection of generic words (to be able to eliminate them later)
     This will be run only once - if the collection exists, the step is skipped.
- 2. [translation_spider.py](./chinesevocab/blob/main/chinesevocab/spiders/translation_spider.py) 
+ 2. [translation_spider.py](./chinesevocab/spiders/translation_spider.py) 
     translates the topic from English to Chinese - if the translation already
     exists in the translation collection, the step is skipped.
- 3. [translation_spider.py](./chinesevocab/spiders/translation_spider.py) 
+ 3. [topic_vocab_spider.py](./chinesevocab/spiders/topic_vocab_spider.py) 
     starts the collection of the words on the specified topic by scraping
     the Chinese Wikipedia page.
  4. [extended_topic_vocab_spider.py](./chinesevocab/spiders/extended_topic_vocab_spider.py ) 
