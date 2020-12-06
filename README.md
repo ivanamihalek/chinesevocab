@@ -24,13 +24,17 @@ compound term should be discoverable in a dictionary for the pipeline to run as 
    
 The project consist of four spiders, and ./run.py runs all of them in the order in
  which they are supposed to be run:
- 1. Fill the database collection of generic words (to be able to eliminate them later)
+ 1. [generic_vocab_spider.py](./chinesevocab/spiders/generic_vocab_spider.py) 
+    fills the database collection of generic words (to be able to eliminate them later)
     This will be run only once - if the collection exists, the step is skipped.
- 2. Translate the topic from English to Chinese - if the translation already
+ 2. [translation_spider.py](./chinesevocab/blob/main/chinesevocab/spiders/translation_spider.py) 
+    translates the topic from English to Chinese - if the translation already
     exists in the translation collection, the step is skipped.
- 3. Start the collection of the words on the specified topic by scraping
+ 3. [translation_spider.py](./chinesevocab/spiders/translation_spider.py) 
+    starts the collection of the words on the specified topic by scraping
     the Chinese Wikipedia page.
- 4. Look for some more words and the word usage frequency by following the first
+ 4. [extended_topic_vocab_spider.py](./chinesevocab/spiders/extended_topic_vocab_spider.py ) 
+    looks for some more words and the word usage frequency by following the first
     couple of tens of links from a search engine.
 
 Each spider can be run by itself:
