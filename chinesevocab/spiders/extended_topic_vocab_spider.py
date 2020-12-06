@@ -134,7 +134,7 @@ class ExtendedTopicVocabSpider(VocabSpider):
 		"""
 		if response.status == 404:  # page not found
 			return
-		# not sure how to check the extracted links
+		# not sure how to test (Contract) the extracted links
 		if urlparse(response.url).netloc == self.start_netloc:
 			# use google pages to extract links to follow
 			self.logger.info(f"extracting links from  {response.url}")

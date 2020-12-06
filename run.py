@@ -104,7 +104,7 @@ def patches(settings):
 	try:
 		db[collection].bulk_write(requests, ordered=False)
 	except BulkWriteError as bwe:
-		print(bwe.details)  # TODO where's the logger handle
+		print(bwe.details)
 
 	client.close()
 
